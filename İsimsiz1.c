@@ -93,37 +93,43 @@ struct Books* deQueue(struct Buffer* q)
 }
 void* publisher(void* arg){
 
-    fputc ('x', stderr); 
+    printf("%d",(int)arg);
 
  	return NULL; 
 }
 // Driver Program to test anove functions
 int main()
-{	int numberofType;
-	int numberofPublisherThread;
-	int numberofPackager;
-	int numberofBooks;
-	int sizeofPackage;
-	int sizeofBuffer;
-	pthread_t publisherthreads[numberofType*numberofPublisherThread];
-	pthread_t packagerthreads[numberofPackager];
-	buffer *bufferTypes[numberofType];
+{	int numberOfType=2;
+	int numberOfPublisherForEachType=3;
+	int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
+	int numberOfPackager;
+	int numberOfBooksForEachPublisher;
+	int maxNumOfBooksForPackager;
+	int numberOfTotalBooks = numberOfBooksForEachPublisher*numberOfPublisher;
+	int initialBufferSize;
+	pthread_t publisherthreads[numberOfPublisher];
+	pthread_t packagerthreads[numberOfPackager];
+	buffer *bufferTypes[numberOfType];
 	int i;
 	for(i=0;i<numberofType;i++){
-		buffer * newBuffer = createBuffer(i,sizeofBuffer);
+		buffer * newBuffer = createBuffer(i,initialBufferSize);
 		bufferTypes[i] = (struct Buffer*)newBuffer;
 	}
-	for(i=0;i<numberofType*numberofPublisherThread;i++){
-		printf("");
-		pthread_create(&publisherthreads[i],NULL,publisher,NULL);
-	}
-	for(i=0;i<numberofType*numberofPublisherThread;i++){
-		pthread_join(publisherthreads[i],NULL);
+	for(i=0;i<numberOfPublisher;i++){
+		rc = pthread_create(&publisherthreads[i],NULL,publisher,(void*)i);
+		if(rc){
+			printf("ERROR; return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
 	}
 	
-/*	for(i=0;i<numberofPackager;i++){
-		;
-	}*/
+	for(i=0;i<numberofPackager;i++){
+		rc=pthread_create(&packagerthreads[i],NULL,publisher,(void*)i);
+		if(rc){
+			printf("ERROR; return code from pthread_create() is %d\n", rc);
+			exit(-1);
+		}
+	}
 	
 /*
     enQueue(q, 10);
