@@ -82,9 +82,6 @@
 		<Unit filename="/home/kripton/CLionProjects/publisher-packager/producerConsumer.c">
 			<Option target="publisher_packager"/>
 		</Unit>
-		<Unit filename="/home/kripton/CLionProjects/publisher-packager/queue.c">
-			<Option target="publisher_packager"/>
-		</Unit>
 		<Unit filename="/home/kripton/CLionProjects/publisher-packager/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

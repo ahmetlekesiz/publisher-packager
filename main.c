@@ -92,7 +92,7 @@ struct Books* deQueue(struct Buffer* q)
 }
 void* publisher(void* arg){
 
-    printf("%d",(int)arg);
+    printf("%ld",(long)arg);
 
     return NULL;
 }
@@ -101,34 +101,37 @@ int main()
 {	int numberOfType=2;
     int numberOfPublisherForEachType=3;
     int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
-    int numberOfPackager;
-    int numberOfBooksForEachPublisher;
-    int maxNumOfBooksForPackager;
+    int numberOfPackager = 10;
+    int numberOfBooksForEachPublisher = 3;
+    int maxNumOfBooksForPackager = 5;
     int numberOfTotalBooks = numberOfBooksForEachPublisher*numberOfPublisher;
-    int initialBufferSize;
-    pthread_t publisherthreads[numberOfPublisher];
-    pthread_t packagerthreads[numberOfPackager];
+    int initialBufferSize = 7;
+    int rc;
+    pthread_t publisherThreads[numberOfPublisher];
+    pthread_t packagerThreads[numberOfPackager];
     buffer *bufferTypes[numberOfType];
-    int i;
-    for(i=0;i<numberofType;i++){
+    long i;
+    for(i=0;i<numberOfType;i++){
         buffer * newBuffer = createBuffer(i,initialBufferSize);
         bufferTypes[i] = (struct Buffer*)newBuffer;
     }
     for(i=0;i<numberOfPublisher;i++){
-        rc = pthread_create(&publisherthreads[i],NULL,publisher,(void*)i);
+        rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) i);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
     }
 
-    for(i=0;i<numberofPackager;i++){
-        rc=pthread_create(&packagerthreads[i],NULL,publisher,(void*)i);
+    for(i=0;i<numberOfPackager;i++){
+        rc=pthread_create(&packagerThreads[i], NULL, publisher, (void*) i);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
     }
+
+    pthread_exit(0);
 
 /*
     enQueue(q, 10);

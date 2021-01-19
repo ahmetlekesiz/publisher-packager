@@ -5,5 +5,3 @@ CMakeFiles/publisher_packager.dir/main.c.o: ../main.c
 
 CMakeFiles/publisher_packager.dir/producerConsumer.c.o: ../producerConsumer.c
 
-CMakeFiles/publisher_packager.dir/queue.c.o: ../queue.c
-

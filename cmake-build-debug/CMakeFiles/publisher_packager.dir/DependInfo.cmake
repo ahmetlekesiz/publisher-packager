@@ -6,7 +6,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_CHECK_C
   "/home/kripton/CLionProjects/publisher-packager/main.c" "/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/publisher_packager.dir/main.c.o"
   "/home/kripton/CLionProjects/publisher-packager/producerConsumer.c" "/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/publisher_packager.dir/producerConsumer.c.o"
-  "/home/kripton/CLionProjects/publisher-packager/queue.c" "/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/publisher_packager.dir/queue.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 

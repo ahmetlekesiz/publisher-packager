@@ -11,18 +11,6 @@ stdio.h
 -
 stdlib.h
 -
-
-/home/kripton/CLionProjects/publisher-packager/producerConsumer.c
-stdio.h
--
 pthread.h
--
-semaphore.h
--
-
-/home/kripton/CLionProjects/publisher-packager/queue.c
-stdio.h
--
-stdlib.h
 -
 
