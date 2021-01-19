@@ -1,0 +1,3 @@
+/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/kripton/CLionProjects/publisher-packager/cmake-build-debug/CMakeFiles/publisher_packager.dir

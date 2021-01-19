@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/kripton/CLionProjects/publisher-packager/main.c
+stdio.h
+-
+stdlib.h
+-
+
+/home/kripton/CLionProjects/publisher-packager/producerConsumer.c
+stdio.h
+-
+pthread.h
+-
+semaphore.h
+-
+
+/home/kripton/CLionProjects/publisher-packager/queue.c
+stdio.h
+-
+stdlib.h
+-
+
