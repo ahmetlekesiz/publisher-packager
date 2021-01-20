@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include <semaphore.h>
 // A linked list (LL) node to store a queue entry
 typedef struct Books {
     int type;
@@ -17,7 +17,14 @@ typedef struct Buffer {
     int sizeOfBuffer;
     int emptySpaceInBuffer;
     int typeCounter;
+	sem_t numberOfBooks;
+	sem_t numberOfEmptySpace;
+	pthread_mutex_t bufferManipulation;
 }buffer;
+
+/*struct publisherArgs{
+	buffer* buff;	
+};*/
 
 // A utility function to create a new linked list node.
 struct Books* newNode(int type)
@@ -38,6 +45,9 @@ struct Buffer* createBuffer(int type, int sizeOfBuffer)
     q->sizeOfBuffer = sizeOfBuffer;
     q->emptySpaceInBuffer = sizeOfBuffer;
     q->typeCounter = 0;
+    sem_init (&(q->numberOfEmptySpace),0,sizeOfBuffer);
+    sem_init (&(q->numberOfBooks),0,0);
+    pthread_mutex_init(&(q->bufferManipulation),NULL);
     return q;
 }
 
@@ -90,11 +100,57 @@ struct Books* deQueue(struct Buffer* q)
 
     return temp;
 }
-void* publisher(void* arg){
+void* packager(void* arg)
+{/*
+    // If queue is empty, return NULL.
+    if (q->front == NULL){
+        printf("Queue is empty!");
+    }
 
-    printf("%ld",(long)arg);
+    // Store previous front and move front one node ahead
+    struct Books* temp = q->front;
 
-    return NULL;
+    q->front = q->front->next;
+
+    // If front becomes NULL, then change rear also as NULL
+    if (q->front == NULL)
+        q->rear = NULL;
+
+    // Arrange buffer counter
+    q->emptySpaceInBuffer++;
+
+    return temp;*/
+}
+void* publisher(void* arg)
+{	
+	buffer* buff = (buffer*)arg;
+	if(buff->emptySpaceInBuffer==0){
+		buff->emptySpaceInBuffer = buff->sizeOfBuffer;
+		buff->sizeOfBuffer = buff->sizeOfBuffer*2;
+	}
+    // Create a new LL node
+    book* temp = newNode(buff->bufferType);
+
+    // Order'�n� bul
+    int order = buff->typeCounter + 1;
+    temp->order = order;
+	sem_wait(buff->numberOfEmptySpace);
+	pthread_mutex_lock (&(buff->bufferManipulation));
+    // If queue is empty, then new node is front and rear both
+    if (buff->rear == NULL) {
+        buff->front = buff->rear = temp;
+    }
+	else{
+    // Add the new node at the end of queue and change rear
+	    buff->rear->next = temp;
+	    buff->rear = temp;
+	}
+    // Buffer counter arragnments
+    buff->typeCounter++;
+    buff->emptySpaceInBuffer--;
+    pthread_mutex_unlock (&(buff->bufferManipulation));
+	sem_post(buff->numberOfBooks);
+    // TODO Bo� yer kalmad�ysa, size 'i  2 ile �arp, gerekli i�lemleri yap.
 }
 // Driver Program to test anove functions
 int main()
