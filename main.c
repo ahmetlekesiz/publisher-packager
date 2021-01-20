@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <math.h>
+#include <string.h>
+
 // A linked list (LL) node to store a queue entry
 typedef struct Books {
     int type;
@@ -134,8 +136,8 @@ void* publisher(void* arg)
 }
 
 // Driver Program to test anove functions
-int main()
-{	int numberOfType=2;
+int main(int argc, char *argv[]){
+    int numberOfType=2;
     int numberOfPublisherForEachType=3;
     int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
     int numberOfPackager = 10;
@@ -147,6 +149,34 @@ int main()
     pthread_t publisherThreads[numberOfPublisher];
     pthread_t packagerThreads[numberOfPackager];
     buffer *bufferTypes[numberOfType];
+
+    /*
+    // Read Arguments
+    if (argc != 10)
+    {
+        printf("enter 10 arguments only.");
+        return 0;
+    }
+
+    if(strcmp(argv[1], "-n") != 0 || strcmp(argv[5], "-b") != 0 || strcmp(argv[7], "-s") != 0) 	{
+        printf("Please enter -n for argv[1], -b for argv[5] and -s for argv[7]\n");
+        return 0;
+    }
+
+    numberOfType = atoi(argv[2]);
+    numberOfPublisherForEachType = atoi(argv[3]);
+    numberOfPackager = atoi(argv[4]);
+    numberOfBooksForEachPublisher = atoi(argv[6]);
+    maxNumOfBooksForPackager = atoi(argv[8]);
+    initialBufferSize = atoi(argv[9]);
+
+    if(numberOfType == 0 || numberOfPublisherForEachType == 0 || numberOfPackager == 0 || numberOfBooksForEachPublisher == 0 || maxNumOfBooksForPackager == 0 || initialBufferSize == 0) {
+        printf("Please enter numeric values for arguments 2,3,4,6,8,9\n");
+        return 0;
+    }
+    printf("%d %d %d %d %d %d\n", numberOfType, numberOfPublisherForEachType, numberOfPackager, numberOfBooksForEachPublisher, maxNumOfBooksForPackager, initialBufferSize);
+     */
+
     long i;
     for(i=0;i<numberOfType;i++){
         buffer * newBuffer = createBuffer(i,initialBufferSize);

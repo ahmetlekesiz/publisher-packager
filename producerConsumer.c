@@ -1,7 +1,7 @@
 //
 // Created by kripton on 19.01.2021.
 //
-
+/*
 #include <stdio.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -171,3 +171,4 @@ void* consumer(void *ip)
 
 
 
+*/

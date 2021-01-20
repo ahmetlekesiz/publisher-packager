@@ -13,4 +13,10 @@ stdlib.h
 -
 pthread.h
 -
+semaphore.h
+-
+math.h
+-
+string.h
+-
 
