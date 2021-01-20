@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <math.h>
 // A linked list (LL) node to store a queue entry
 typedef struct Books {
     int type;
@@ -101,9 +102,11 @@ struct Books* deQueue(struct Buffer* q)
     return temp;
 }
 void* packager(void* arg)
-{/*
+{	
+	//Rastgele buffer seçilecek. Eðer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
+	buffer* buff = (buffer*)arg;
     // If queue is empty, return NULL.
-    if (q->front == NULL){
+    if (buff->front == NULL){
         printf("Queue is empty!");
     }
 
@@ -119,7 +122,7 @@ void* packager(void* arg)
     // Arrange buffer counter
     q->emptySpaceInBuffer++;
 
-    return temp;*/
+    return temp;
 }
 void* publisher(void* arg)
 {	
@@ -172,7 +175,7 @@ int main()
         bufferTypes[i] = (struct Buffer*)newBuffer;
     }
     for(i=0;i<numberOfPublisher;i++){
-        rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) i);
+        rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) bufferTypes);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
@@ -180,7 +183,7 @@ int main()
     }
 
     for(i=0;i<numberOfPackager;i++){
-        rc=pthread_create(&packagerThreads[i], NULL, publisher, (void*) i);
+        rc=pthread_create(&packagerThreads[i], NULL, packager, (void*) i);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
