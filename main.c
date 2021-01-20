@@ -77,24 +77,25 @@ struct Books* deQueue(struct Buffer* q)
 
 void* packager(void* arg)
 {	
-	// TODO Rastgele buffer se�ilecek. E�er empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer se�ilecek.
+	// TODO Rastgele buffer seçilecek. Eğer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
 	buffer* buff = (buffer*)arg;
+
     // If queue is empty, return NULL.
     if (buff->front == NULL){
         printf("Queue is empty!");
     }
 
     // Store previous front and move front one node ahead
-    struct Books* temp = q->front;
+    struct Books* temp = buff->front;
 
-    q->front = q->front->next;
+    buff->front = buff->front->next;
 
     // If front becomes NULL, then change rear also as NULL
-    if (q->front == NULL)
-        q->rear = NULL;
+    if (buff->front == NULL)
+        buff->rear = NULL;
 
     // Arrange buffer counter
-    q->emptySpaceInBuffer++;
+    buff->emptySpaceInBuffer++;
 
     return temp;
 }
