@@ -101,9 +101,10 @@ struct Books* deQueue(struct Buffer* q)
 
     return temp;
 }
+
 void* packager(void* arg)
 {	
-	//Rastgele buffer seçilecek. Eðer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
+	// TODO Rastgele buffer seï¿½ilecek. Eï¿½er empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seï¿½ilecek.
 	buffer* buff = (buffer*)arg;
     // If queue is empty, return NULL.
     if (buff->front == NULL){
@@ -124,6 +125,7 @@ void* packager(void* arg)
 
     return temp;
 }
+
 void* publisher(void* arg)
 {	
 	buffer* buff = (buffer*)arg;
@@ -137,7 +139,7 @@ void* publisher(void* arg)
     // Order'ï¿½nï¿½ bul
     int order = buff->typeCounter + 1;
     temp->order = order;
-	sem_wait(buff->numberOfEmptySpace);
+	sem_wait(&buff->numberOfEmptySpace);
 	pthread_mutex_lock (&(buff->bufferManipulation));
     // If queue is empty, then new node is front and rear both
     if (buff->rear == NULL) {
@@ -152,9 +154,10 @@ void* publisher(void* arg)
     buff->typeCounter++;
     buff->emptySpaceInBuffer--;
     pthread_mutex_unlock (&(buff->bufferManipulation));
-	sem_post(buff->numberOfBooks);
+	sem_post(&buff->numberOfBooks);
     // TODO Boï¿½ yer kalmadï¿½ysa, size 'i  2 ile ï¿½arp, gerekli iï¿½lemleri yap.
 }
+
 // Driver Program to test anove functions
 int main()
 {	int numberOfType=2;
