@@ -1,1 +1,1 @@
-/usr/bin/cc -g   CMakeFiles/publisher_packager.dir/main.c.o CMakeFiles/publisher_packager.dir/producerConsumer.c.o  -o publisher_packager 
+/usr/bin/cc  -pthread -g   CMakeFiles/publisher_packager.dir/main.c.o CMakeFiles/publisher_packager.dir/producerConsumer.c.o  -o publisher_packager 

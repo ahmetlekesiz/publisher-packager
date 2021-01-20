@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <math.h>
 #include <string.h>
+#include <unistd.h>
 
 // A linked list (LL) node to store a queue entry
 typedef struct Books {
@@ -20,6 +21,7 @@ typedef struct Buffer {
     int sizeOfBuffer;
     int emptySpaceInBuffer;
     int typeCounter;
+    int numberOfBooksForEachPublisher;
 	sem_t numberOfBooks;
 	sem_t numberOfEmptySpace;
 	pthread_mutex_t bufferManipulation;
@@ -30,7 +32,7 @@ typedef struct Buffer {
 };*/
 
 // A utility function to create a new linked list node.
-struct Books* newNode(int type)
+struct Books* newBookNode(int type)
 {
     struct Books* temp = (struct Books*)malloc(sizeof(struct Books));
     temp->order = -1;
@@ -40,7 +42,7 @@ struct Books* newNode(int type)
 }
 
 // A utility function to create an empty queue
-struct Buffer* createBuffer(int type, int sizeOfBuffer)
+struct Buffer* createBuffer(int type, int sizeOfBuffer, int numberOfBooksForEachPublisher)
 {
     struct Buffer* q = (struct Buffer*)malloc(sizeof(struct Buffer));
     q->front = q->rear = NULL;
@@ -48,6 +50,7 @@ struct Buffer* createBuffer(int type, int sizeOfBuffer)
     q->sizeOfBuffer = sizeOfBuffer;
     q->emptySpaceInBuffer = sizeOfBuffer;
     q->typeCounter = 0;
+    q->numberOfBooksForEachPublisher = numberOfBooksForEachPublisher;
     sem_init (&(q->numberOfEmptySpace),0,sizeOfBuffer);
     sem_init (&(q->numberOfBooks),0,0);
     pthread_mutex_init(&(q->bufferManipulation),NULL);
@@ -76,7 +79,7 @@ struct Books* deQueue(struct Buffer* q)
 
     return temp;
 }
-
+/*
 void* packager(void* arg)
 {	
 	// TODO Rastgele buffer seçilecek. Eğer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
@@ -101,39 +104,58 @@ void* packager(void* arg)
 
     return temp;
 }
-
+*/
 void* publisher(void* arg)
-{	
+{
+    long publisherID = pthread_self();
+
 	buffer* buff = (buffer*)arg;
-	if(buff->emptySpaceInBuffer==0){
-		buff->emptySpaceInBuffer = buff->sizeOfBuffer;
-		buff->sizeOfBuffer = buff->sizeOfBuffer*2;
-	}
-    // Create a new LL node
-    book* temp = newNode(buff->bufferType);
 
-    // Order'�n� bul
-    int order = buff->typeCounter + 1;
-    temp->order = order;
-	sem_wait(&buff->numberOfEmptySpace);
-	pthread_mutex_lock (&(buff->bufferManipulation));
-    // If queue is empty, then new node is front and rear both
-    if (buff->rear == NULL) {
-        buff->front = buff->rear = temp;
+	// Create books for each publisher
+	int typeOfPublisher = buff->bufferType;
+	int numberOfBooks = buff->numberOfBooksForEachPublisher;
+	book* bookArray[numberOfBooks];
+	int i;
+    for (int i = 0; i < numberOfBooks; ++i) {
+        book* newBook = newBookNode(typeOfPublisher);
+        bookArray[i] = newBook;
     }
-	else{
-    // Add the new node at the end of queue and change rear
-	    buff->rear->next = temp;
-	    buff->rear = temp;
-	}
 
-    // Buffer counter arragnments
-    buff->typeCounter++;
-    buff->emptySpaceInBuffer--;
-    pthread_mutex_unlock (&(buff->bufferManipulation));
-	sem_post(&buff->numberOfBooks);
-    // TODO Bo� yer kalmad�ysa, size 'i  2 ile �arp, gerekli i�lemleri yap.
+    int order;
+    /*
+    if(buff->emptySpaceInBuffer==0){
+        buff->emptySpaceInBuffer = buff->sizeOfBuffer;
+        buff->sizeOfBuffer = buff->sizeOfBuffer*2;
+    }*/
+
+    for (int j = 0; j < numberOfBooks; ++j) {
+        book* bookToAdd = bookArray[j];
+        pthread_mutex_lock (&(buff->bufferManipulation));
+        printf("start inserting buffer type: %d\n", typeOfPublisher);
+        //sleep(1);
+        // Put item to the related buffer type
+        // Find the order of current book
+        order = buff->typeCounter + 1;
+        bookToAdd->order = order;
+        // Add to buffer
+        // If queue is empty, then new node is front and rear both
+        if (buff->rear == NULL) {
+            buff->front = buff->rear = bookToAdd;
+        }
+        else{
+            // Add the new node at the end of queue and change rear
+            buff->rear->next = bookToAdd;
+            buff->rear = bookToAdd;
+        }
+        // Buffer counter arraignments
+        buff->typeCounter++;
+        buff->emptySpaceInBuffer--;
+        printf("finish inserting buffer type: %d, book order: %d, publisherID: %ld\n", typeOfPublisher, order, publisherID);
+        pthread_mutex_unlock (&(buff->bufferManipulation));
+        sem_post(&buff->numberOfBooks);
+    }
 }
+
 
 // Driver Program to test anove functions
 int main(int argc, char *argv[]){
@@ -141,7 +163,7 @@ int main(int argc, char *argv[]){
     int numberOfPublisherForEachType=3;
     int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
     int numberOfPackager = 10;
-    int numberOfBooksForEachPublisher = 3;
+    int numberOfBooksForEachPublisher = 10;
     int maxNumOfBooksForPackager = 5;
     int numberOfTotalBooks = numberOfBooksForEachPublisher*numberOfPublisher;
     int initialBufferSize = 7;
@@ -179,24 +201,32 @@ int main(int argc, char *argv[]){
 
     long i;
     for(i=0;i<numberOfType;i++){
-        buffer * newBuffer = createBuffer(i,initialBufferSize);
+        buffer * newBuffer = createBuffer(i,initialBufferSize, numberOfBooksForEachPublisher);
         bufferTypes[i] = (struct Buffer*)newBuffer;
     }
-    for(i=0;i<numberOfPublisher;i++){
-        rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) bufferTypes);
-        if(rc){
-            printf("ERROR; return code from pthread_create() is %d\n", rc);
-            exit(-1);
+
+    printf("asd");
+
+    int k;
+    for (k = 0; k < numberOfType; k++) {
+        for(i=0;i<numberOfPublisherForEachType;i++){
+            rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) bufferTypes[k]);
+            if(rc){
+                printf("ERROR; return code from pthread_create() is %d\n", rc);
+                exit(-1);
+            }
         }
     }
 
+
+    /*
     for(i=0;i<numberOfPackager;i++){
         rc=pthread_create(&packagerThreads[i], NULL, packager, (void*) i);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
-    }
+    }*/
 
     pthread_exit(0);
 
