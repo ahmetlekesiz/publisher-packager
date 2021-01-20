@@ -197,6 +197,33 @@ producerConsumer.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/publisher_packager.dir/build.make CMakeFiles/publisher_packager.dir/producerConsumer.c.s
 .PHONY : producerConsumer.c.s
 
+randomTry.o: randomTry.c.o
+
+.PHONY : randomTry.o
+
+# target to build an object file
+randomTry.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/publisher_packager.dir/build.make CMakeFiles/publisher_packager.dir/randomTry.c.o
+.PHONY : randomTry.c.o
+
+randomTry.i: randomTry.c.i
+
+.PHONY : randomTry.i
+
+# target to preprocess a source file
+randomTry.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/publisher_packager.dir/build.make CMakeFiles/publisher_packager.dir/randomTry.c.i
+.PHONY : randomTry.c.i
+
+randomTry.s: randomTry.c.s
+
+.PHONY : randomTry.s
+
+# target to generate assembly for a file
+randomTry.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/publisher_packager.dir/build.make CMakeFiles/publisher_packager.dir/randomTry.c.s
+.PHONY : randomTry.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -212,6 +239,9 @@ help:
 	@echo "... producerConsumer.o"
 	@echo "... producerConsumer.i"
 	@echo "... producerConsumer.s"
+	@echo "... randomTry.o"
+	@echo "... randomTry.i"
+	@echo "... randomTry.s"
 .PHONY : help
 
 

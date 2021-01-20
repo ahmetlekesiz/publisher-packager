@@ -6,6 +6,16 @@
 #include <string.h>
 #include <unistd.h>
 
+int bufferArraySize = 3;
+
+unsigned int
+randomNumber(unsigned int min, unsigned int max)
+{
+    double x= (double)rand()/RAND_MAX;
+
+    return (max - min +1)*x+ min;
+}
+
 // A linked list (LL) node to store a queue entry
 typedef struct Books {
     int type;
@@ -23,6 +33,7 @@ typedef struct Buffer {
     int typeCounter;
 	sem_t numberOfBooks;
 	pthread_mutex_t bufferManipulation;
+	struct Buffer* nextBuffer;
 }buffer;
 
 typedef struct PublisherArguments {
@@ -31,6 +42,11 @@ typedef struct PublisherArguments {
     int numberOfBooksForEachPublisher;
 }publisherArgs;
 
+typedef struct PackagerArguments {
+    buffer * bufferHead;
+    int numberOfTotalBuffer;
+}packagerArgs;
+
 publisherArgs* newPublisherArgs(buffer *buff, int publisherID, int numberOfBooksForEachPublisher){
     publisherArgs *temp =  (publisherArgs *)malloc(sizeof(publisherArgs));
     temp->publisherID = publisherID;
@@ -38,6 +54,14 @@ publisherArgs* newPublisherArgs(buffer *buff, int publisherID, int numberOfBooks
     temp->numberOfBooksForEachPublisher = numberOfBooksForEachPublisher;
     return temp;
 }
+
+publisherArgs* newPackagerArgs(buffer *bufferHead, int numberOfTotalBuffer){
+    packagerArgs *temp =  (packagerArgs *)malloc(sizeof(packagerArgs));
+    temp->bufferHead = bufferHead;
+    temp->numberOfTotalBuffer = numberOfTotalBuffer;
+    return temp;
+}
+
 
 // A utility function to create a new linked list node.
 struct Books* newBookNode(int type)
@@ -60,6 +84,7 @@ struct Buffer* createBuffer(int type, int sizeOfBuffer, int numberOfBooksForEach
     q->typeCounter = 0;
     sem_init (&(q->numberOfBooks),0,0);
     pthread_mutex_init(&(q->bufferManipulation),NULL);
+    q->nextBuffer = NULL;
     return q;
 }
 
@@ -85,11 +110,25 @@ struct Books* deQueue(struct Buffer* q)
 
     return temp;
 }
-/*
+
+
 void* packager(void* arg)
 {	
 	// TODO Rastgele buffer seçilecek. Eğer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
-	buffer* buff = (buffer*)arg;
+	packagerArgs * currentPackagerArgs = (packagerArgs*)arg;
+	buffer *buff = currentPackagerArgs->bufferHead->nextBuffer;
+    int numberOfTotalBuffer = currentPackagerArgs->numberOfTotalBuffer;
+
+    int randomBufferIndex = randomNumber(1, numberOfTotalBuffer);
+    int counter = 1;
+    buffer *bufferToAdd = buff;
+    while (counter != randomBufferIndex){
+        bufferToAdd = bufferToAdd->nextBuffer;
+        counter++;
+    }
+
+
+
 
     // If queue is empty, return NULL.
     if (buff->front == NULL){
@@ -110,7 +149,7 @@ void* packager(void* arg)
 
     return temp;
 }
-*/
+
 
 void* publisher(void* arg)
 {
@@ -129,16 +168,9 @@ void* publisher(void* arg)
     }
 
     int order;
-
-
-
     for (int j = 0; j < numberOfBooks; ++j) {
         book* bookToAdd = bookArray[j];
         pthread_mutex_lock (&(buff->bufferManipulation));
-        //printf("start inserting buffer type: %d\n", typeOfPublisher);
-        //sleep(1);
-        // Put item to the related buffer type
-        // Find the order of current book
         order = buff->typeCounter + 1;
         bookToAdd->order = order;
         // Check buffer size
@@ -171,13 +203,12 @@ void* publisher(void* arg)
 
 }
 
-
 // Driver Program to test anove functions
 int main(int argc, char *argv[]){
     int numberOfType=2;
     int numberOfPublisherForEachType=11;
     int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
-    int numberOfPackager = 0;
+    int numberOfPackager = 3;
     int numberOfBooksForEachPublisher = 17;
     int maxNumOfBooksForPackager = 5;
     int numberOfTotalBooks = numberOfBooksForEachPublisher*numberOfPublisher;
@@ -186,7 +217,7 @@ int main(int argc, char *argv[]){
     pthread_t publisherThreads[numberOfPublisher];
     pthread_t packagerThreads[numberOfPackager];
     buffer *bufferTypes[numberOfType];
-
+    bufferArraySize = numberOfType;
     printf("<Thread-type and ID>        <Output>\n");
 
     /*
@@ -216,9 +247,19 @@ int main(int argc, char *argv[]){
     printf("%d %d %d %d %d %d\n", numberOfType, numberOfPublisherForEachType, numberOfPackager, numberOfBooksForEachPublisher, maxNumOfBooksForPackager, initialBufferSize);
      */
 
+    buffer *headBuffer = createBuffer(-1, initialBufferSize, numberOfBooksForEachPublisher);
+
     int i;
     for(i=0;i<numberOfType;i++){
         buffer * newBuffer = createBuffer(i,initialBufferSize, numberOfBooksForEachPublisher);
+        // Add to Linked List
+        // boş yeri bul
+        buffer *temp = headBuffer;
+        while (temp->nextBuffer != NULL){
+            temp = temp->nextBuffer;
+        }
+        temp->nextBuffer = newBuffer;
+        // Add to Array
         bufferTypes[i] = (struct Buffer*)newBuffer;
     }
 
@@ -234,15 +275,14 @@ int main(int argc, char *argv[]){
         }
     }
 
-
-    /*
     for(i=0;i<numberOfPackager;i++){
-        rc=pthread_create(&packagerThreads[i], NULL, packager, (void*) i);
+        publisherArgs *currentPackagerArgs = newPackagerArgs(headBuffer, numberOfType);
+        rc=pthread_create(&packagerThreads[i], NULL, packager, (void*) currentPackagerArgs);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
-    }*/
+    }
 
     pthread_exit(0);
 
