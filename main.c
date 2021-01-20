@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 int bufferArraySize = 3;
+int totalBooksToProcess;
+sem_t bookCounter;
 
 unsigned int
 randomNumber(unsigned int min, unsigned int max)
@@ -31,6 +33,7 @@ typedef struct Buffer {
     int sizeOfBuffer;
     int emptySpaceInBuffer;
     int typeCounter;
+    int totalBooksUntilNow;
 	sem_t numberOfBooks;
 	pthread_mutex_t bufferManipulation;
 	struct Buffer* nextBuffer;
@@ -44,24 +47,27 @@ typedef struct PublisherArguments {
 
 typedef struct PackagerArguments {
     buffer * bufferHead;
+    int packagerID;
     int numberOfTotalBuffer;
+    int maxNumOfBooksForPackager;
 }packagerArgs;
 
-publisherArgs* newPublisherArgs(buffer *buff, int publisherID, int numberOfBooksForEachPublisher){
+publisherArgs* newPublisherArgs(buffer *buff, int publisherID, int numberOfBooksForEachPublisher, int maxNumOfBooksForPackager){
     publisherArgs *temp =  (publisherArgs *)malloc(sizeof(publisherArgs));
     temp->publisherID = publisherID;
     temp->buff = buff;
     temp->numberOfBooksForEachPublisher = numberOfBooksForEachPublisher;
+    temp->numberOfBooksForEachPublisher = maxNumOfBooksForPackager;
     return temp;
 }
 
-publisherArgs* newPackagerArgs(buffer *bufferHead, int numberOfTotalBuffer){
+publisherArgs* newPackagerArgs(buffer *bufferHead, int numberOfTotalBuffer, int packagerID){
     packagerArgs *temp =  (packagerArgs *)malloc(sizeof(packagerArgs));
     temp->bufferHead = bufferHead;
     temp->numberOfTotalBuffer = numberOfTotalBuffer;
+    temp->packagerID = packagerID;
     return temp;
 }
-
 
 // A utility function to create a new linked list node.
 struct Books* newBookNode(int type)
@@ -84,6 +90,7 @@ struct Buffer* createBuffer(int type, int sizeOfBuffer, int numberOfBooksForEach
     q->typeCounter = 0;
     sem_init (&(q->numberOfBooks),0,0);
     pthread_mutex_init(&(q->bufferManipulation),NULL);
+    q->totalBooksUntilNow = 0;
     q->nextBuffer = NULL;
     return q;
 }
@@ -111,43 +118,87 @@ struct Books* deQueue(struct Buffer* q)
     return temp;
 }
 
+buffer* selectRandomBuffer(int numberOfTotalBuffer, buffer *buff){
+    int notEmptyBuffers[numberOfTotalBuffer];
+    int l;
+    for (l = 0; l < numberOfTotalBuffer; ++l) {
+        notEmptyBuffers[l] = -1;
+    }
+    // Fill notEmptyBuffer Array
+    int index = 0;
+    buffer *temp = buff;
+    int totalBookUntilNow = 0;
+    for (int i = 0; i < numberOfTotalBuffer ; ++i) {
+        // Find Total Number of Book in All Buffers.
+        totalBookUntilNow = totalBookUntilNow + temp->totalBooksUntilNow;
+        // Find non empty buffer.
+        if (temp->emptySpaceInBuffer != temp->sizeOfBuffer){
+            notEmptyBuffers[index] = i;
+            index++;
+        }
+        temp = temp->nextBuffer;
+    }
+
+    if(notEmptyBuffers[0] == -1 && totalBookUntilNow == totalBooksToProcess){
+        printf("All buffers are empty and All books are already packaged!");
+        pthread_exit(0);
+    }else if(notEmptyBuffers[0] == -1){
+        sem_wait(&bookCounter);
+    }
+
+    int randomBufferIndex = notEmptyBuffers[randomNumber(0, index-1)];
+    int counter = 0;
+    buffer *bufferToTake = buff;
+    while (counter != randomBufferIndex){
+        bufferToTake = bufferToTake->nextBuffer;
+        counter++;
+    }
+    return bufferToTake;
+}
 
 void* packager(void* arg)
 {	
-	// TODO Rastgele buffer seçilecek. Eğer empty ve thread varsa beklenecek. Yoksa yeni rastgele buffer seçilecek.
 	packagerArgs * currentPackagerArgs = (packagerArgs*)arg;
 	buffer *buff = currentPackagerArgs->bufferHead->nextBuffer;
     int numberOfTotalBuffer = currentPackagerArgs->numberOfTotalBuffer;
-
-    int randomBufferIndex = randomNumber(1, numberOfTotalBuffer);
-    int counter = 1;
-    buffer *bufferToAdd = buff;
-    while (counter != randomBufferIndex){
-        bufferToAdd = bufferToAdd->nextBuffer;
-        counter++;
+    int maxNumOfBooksForPackager = currentPackagerArgs->maxNumOfBooksForPackager;
+    int packageCounter = 0;
+    int packagerID = currentPackagerArgs->packagerID;
+    book *packageHead = newBookNode(-1);
+    while(1){
+        // Select random buffer
+        buffer *bufferToTake = selectRandomBuffer(numberOfTotalBuffer, buff);
+        // Lock selected buffer
+        pthread_mutex_lock(&(bufferToTake->bufferManipulation));
+        // Remove Book
+        book* bookToTake = deQueue(bufferToTake);
+        // Check if package is full
+        if(packageCounter == maxNumOfBooksForPackager){
+            printf("Packager %d     Finished preparing one package. The package contains: ", packagerID);
+            // Print package context
+            book *packageIter = packageHead->next;
+            while(packageIter != NULL){
+                int typeOfBook = packageIter->type;
+                int orderOfBook = packageIter->order;
+                printf("Book%d_%d, ", typeOfBook, orderOfBook);
+                book *packageToFree = packageIter;
+                packageIter = packageIter->next;
+                free(packageToFree);
+            }
+            printf("\n");
+            // Make the package empty
+            packageHead->next = NULL;
+        }
+        // Find empty place in the package
+        book *temp = packageHead;
+        while(temp->next != NULL){
+            temp = temp->next;
+        }
+        // Insert new book to package
+        temp->next = bookToTake;
+        // Unlock buffer
+        pthread_mutex_unlock (&(buff->bufferManipulation));
     }
-
-
-
-
-    // If queue is empty, return NULL.
-    if (buff->front == NULL){
-        printf("Queue is empty!");
-    }
-
-    // Store previous front and move front one node ahead
-    struct Books* temp = buff->front;
-
-    buff->front = buff->front->next;
-
-    // If front becomes NULL, then change rear also as NULL
-    if (buff->front == NULL)
-        buff->rear = NULL;
-
-    // Arrange buffer counter
-    buff->emptySpaceInBuffer++;
-
-    return temp;
 }
 
 
@@ -190,11 +241,13 @@ void* publisher(void* arg)
             buff->rear = bookToAdd;
         }
         // Buffer counter arraignments
+        buff->totalBooksUntilNow++;
         buff->typeCounter++;
         buff->emptySpaceInBuffer--;
         printf("Publisher %d of type %d       Book%d_%d is published and put into the buffer %d.\n", publisherID, typeOfPublisher, typeOfPublisher, order, typeOfPublisher);
         pthread_mutex_unlock (&(buff->bufferManipulation));
         sem_post(&buff->numberOfBooks);
+        sem_post(&bookCounter);
     }
     printf("------------------------------------------------------------------------------------\n");
     printf("Publisher %d of type %d     Finished publishing %d books. Exiting system.\n", publisherID, typeOfPublisher, numberOfBooks);
@@ -205,12 +258,12 @@ void* publisher(void* arg)
 
 // Driver Program to test anove functions
 int main(int argc, char *argv[]){
-    int numberOfType=2;
-    int numberOfPublisherForEachType=11;
+    int numberOfType=3;
+    int numberOfPublisherForEachType=2;
     int numberOfPublisher = numberOfType*numberOfPublisherForEachType;
-    int numberOfPackager = 3;
-    int numberOfBooksForEachPublisher = 17;
-    int maxNumOfBooksForPackager = 5;
+    int numberOfPackager = 2;
+    int numberOfBooksForEachPublisher = 4;
+    int maxNumOfBooksForPackager = 3;
     int numberOfTotalBooks = numberOfBooksForEachPublisher*numberOfPublisher;
     int initialBufferSize = 7;
     int rc;
@@ -218,8 +271,10 @@ int main(int argc, char *argv[]){
     pthread_t packagerThreads[numberOfPackager];
     buffer *bufferTypes[numberOfType];
     bufferArraySize = numberOfType;
+    // Set to Global Variable
+    totalBooksToProcess = numberOfTotalBooks;
     printf("<Thread-type and ID>        <Output>\n");
-
+    sem_init(&bookCounter, 0,0);
     /*
     // Read Arguments
     if (argc != 10)
@@ -266,7 +321,7 @@ int main(int argc, char *argv[]){
     int k;
     for (k = 0; k < numberOfType; k++) {
         for(i=0;i<numberOfPublisherForEachType;i++){
-            publisherArgs *currentPublisherArgs = newPublisherArgs(bufferTypes[k], i, numberOfBooksForEachPublisher);
+            publisherArgs *currentPublisherArgs = newPublisherArgs(bufferTypes[k], i, numberOfBooksForEachPublisher, maxNumOfBooksForPackager);
             rc = pthread_create(&publisherThreads[i], NULL, publisher, (void*) currentPublisherArgs);
             if(rc){
                 printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -275,8 +330,10 @@ int main(int argc, char *argv[]){
         }
     }
 
+    int packagerID;
     for(i=0;i<numberOfPackager;i++){
-        publisherArgs *currentPackagerArgs = newPackagerArgs(headBuffer, numberOfType);
+        packagerID = i + 1;
+        publisherArgs *currentPackagerArgs = newPackagerArgs(headBuffer, numberOfType, packagerID);
         rc=pthread_create(&packagerThreads[i], NULL, packager, (void*) currentPackagerArgs);
         if(rc){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -286,18 +343,7 @@ int main(int argc, char *argv[]){
 
     pthread_exit(0);
 
-/*
-    enQueue(q, 10);
-    enQueue(q, 20);
-    deQueue(q);
-    deQueue(q);
-    enQueue(q, 30);
-    enQueue(q, 40);
-    enQueue(q, 50);
-    deQueue(q);
-    printf("Buffer Front : %d \n", q->front->key);
-    printf("Buffer Rear : %d", q->rear->key);
-    return 0;*/
+   // return 0;
 }
 
 
