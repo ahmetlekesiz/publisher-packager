@@ -52,33 +52,6 @@ struct Buffer* createBuffer(int type, int sizeOfBuffer)
     return q;
 }
 
-// The function to add a key k to q
-void enQueue(struct Buffer* q, int k)
-{
-    // Create a new LL node
-    struct Books* temp = newNode(k);
-
-    // Order'�n� bul
-    int order = q->typeCounter + 1;
-    temp->order = order;
-
-    // If queue is empty, then new node is front and rear both
-    if (q->rear == NULL) {
-        q->front = q->rear = temp;
-        return;
-    }
-
-    // Add the new node at the end of queue and change rear
-    q->rear->next = temp;
-    q->rear = temp;
-
-    // Buffer counter arragnments
-    q->typeCounter++;
-    q->emptySpaceInBuffer--;
-
-    // TODO Bo� yer kalmad�ysa, size 'i  2 ile �arp, gerekli i�lemleri yap.
-}
-
 // Function to remove a key from given queue q
 struct Books* deQueue(struct Buffer* q)
 {
@@ -150,6 +123,7 @@ void* publisher(void* arg)
 	    buff->rear->next = temp;
 	    buff->rear = temp;
 	}
+
     // Buffer counter arragnments
     buff->typeCounter++;
     buff->emptySpaceInBuffer--;
